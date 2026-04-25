@@ -5,6 +5,7 @@ This is FlipSay, an browser-based SDR interface for the Flipper Zero.
 The idea was simple: what if your Flipper had a proper SDR frontend, like SDR# or GQRX, but running entirely in a webpage connected over USB? That’s what this is.
 
 What it does: 
+
 •Live spectrum analyzer with a real-time waterfall display. the waterfall actually scrolls and colors signal strength in that classic orange thermal style
 
 •Full gain control. LNA, Mixer and IF gain stages, all draggable in real time •Sub-GHz RX/TX receive, raw record, and transmit directly from the UI using real Flipper CLI commands (subghz rx, subghz tx, subghz rx_raw)
