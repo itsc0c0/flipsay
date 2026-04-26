@@ -10,7 +10,9 @@ What it does:
 
 •Full gain control. LNA, Mixer and IF gain stages, all draggable in real time •Sub-GHz RX/TX receive, raw record, and transmit directly from the UI using real Flipper CLI commands (subghz rx, subghz tx, subghz rx_raw)
 
-•Frequency scanner sweeps across common bands (315, 433, 868, 915 MHz) automatically •Signal logger, detected signals get timestamped and saved, exportable as .txt •Demodulation settings: OOK, FSK, AM270, AM650, FM328, FM476 mode switching
+•Frequency scanner sweeps across common bands (315, 433, 868, 915 MHz) automatically •Signal logger, detected signals get timestamped and saved, exportable as .txt 
+
+•Demodulation settings: OOK, FSK, AM270, AM650, FM328, FM476 mode switching
 
 •Everything is pixel art. the whole UI is styled like a retro SDR terminal, Press Start 2P font, chunky orange panels, CRT scanlines and all 
 
@@ -21,4 +23,4 @@ Requirements:
 • Google Chrome or Microsoft Edge (WebSerial API) 
 • USB cable
 
-The first beta-release is coming soon.
+Created by github.com/itsc0c0
