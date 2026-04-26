@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlipSay — Flipper Zero SDR Interface</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/flipsay.css">
+</head>
+<body>
+
+<!-- ══ WELCOME MODAL ══ -->
+<div id="welcome">
+  <div id="welcome-box">
+    <div id="welcome-logo">FlipSay</div>
+    <div id="welcome-beta">◈ PUBLIC BETA ◈</div>
+    <div class="wline"></div>
+    <div id="welcome-msg">
+      Welcome to <span>FlipSay</span> — the first browser-based<br>
+      SDR-style interface for <span>Flipper Zero</span>.<br><br>
+      Connect your Flipper via USB and start<br>
+      exploring the radio spectrum in real time.
+    </div>
+    <div class="wline"></div>
+    <ul id="welcome-notes">
+      <li>Requires <span>Momentum firmware</span> (developer version)</li>
+      <li>Enable <span>Debug Mode</span> on your Flipper first</li>
+      <li>Use <span>Google Chrome</span> or <span>Microsoft Edge</span></li>
+      <li>Close <span>qFlipper</span> before connecting</li>
+      <li>This is a <span style="color:var(--YEL)">beta</span> — bugs may occur. Report them!</li>
+    </ul>
+    <div class="wline"></div>
+    <div style="font-size:5px;color:var(--DIM);text-align:center;">
+      Built by itsc0c0 · flipsay.dev · v0.9-beta
+    </div>
+    <button id="welcome-ok" onclick="closeWelcome()">LET'S GO ▶</button>
+  </div>
+</div>
+
+<!-- ══ MAIN FRAME ══ -->
+<div id="frame">
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+
+  <!-- HEADER -->
+  <div id="hdr">
+    <div id="logo">
+      <!-- Pixel art FlipSay dolphin icon -->
+      <svg width="42" height="42" viewBox="0 0 44 44" style="image-rendering:pixelated;flex-shrink:0;">
+        <rect width="44" height="44" fill="#0C0700"/>
+        <rect x="1" y="1" width="42" height="42" fill="none" stroke="#FF8000" stroke-width="2"/>
+        <rect x="4"  y="22" width="4" height="4"  fill="#FF8000"/>
+        <rect x="8"  y="18" width="4" height="8"  fill="#FF8000"/>
+        <rect x="12" y="14" width="4" height="14" fill="#FFA030"/>
+        <rect x="16" y="12" width="4" height="18" fill="#FFA030"/>
+        <rect x="20" y="14" width="4" height="14" fill="#FF8000"/>
+        <rect x="24" y="18" width="4" height="10" fill="#C05000"/>
+        <rect x="28" y="20" width="4" height="8"  fill="#C05000"/>
+        <rect x="32" y="22" width="6" height="4"  fill="#7A3000"/>
+        <rect x="34" y="18" width="4" height="4"  fill="#C05000"/>
+        <rect x="34" y="26" width="4" height="4"  fill="#C05000"/>
+        <rect x="18" y="8"  width="4" height="6"  fill="#FF8000"/>
+        <rect x="20" y="4"  width="2" height="4"  fill="#FFA030"/>
+        <rect x="14" y="16" width="2" height="2"  fill="#FFD060"/>
+        <rect x="2"  y="14" width="2" height="2"  fill="#FF8000"/>
+        <rect x="2"  y="19" width="2" height="2"  fill="#C05000"/>
+        <rect x="2"  y="24" width="2" height="2"  fill="#7A3000"/>
+        <rect x="38" y="10" width="2" height="2"  fill="#FFA030"/>
+        <rect x="40" y="8"  width="2" height="2"  fill="#FF8000"/>
+        <rect x="38" y="16" width="2" height="2"  fill="#FFA030"/>
+      </svg>
+      <div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div id="logo-title">FlipSay</div>
+          <div id="beta-badge">BETA</div>
+        </div>
+        <div id="logo-sub">— By itsc0c0 —</div>
+      </div>
+    </div>
+    <div id="hdr-right">
+      <div id="conn-info">
+        <div id="conn-device">Not Connected</div>
+        <div id="conn-tty">USB Serial Disconnected</div>
+      </div>
+      <button id="conn-btn" onclick="toggleConnect()">CONNECT USB</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div id="tabs">
+    <div class="tab active" onclick="showTab('spectrum',this)">Spectrum</div>
+    <div class="tab"        onclick="showTab('subghz',  this)">Sub-GHz</div>
+    <div class="tab"        onclick="showTab('signals', this)">Signals</div>
+    <div class="tab"        onclick="showTab('logs',    this)">Logs</div>
+  </div>
+
+  <!-- BODY -->
+  <div id="body">
+
+    <!-- DISCONNECT OVERLAY -->
+    <div id="overlay">
+      <div id="ov-icon">⬡</div>
+      <div id="ov-title">FLIPPER NOT CONNECTED</div>
+      <div id="ov-sub">
+        Connect Flipper Zero via USB cable.<br>
+        Close qFlipper · Enable Debug Mode<br>
+        Momentum firmware required.<br>
+        Chrome or Edge only (WebSerial API).
+      </div>
+      <button id="ov-btn" onclick="toggleConnect()">CONNECT NOW</button>
+    </div>
+
+    <!-- ══ SPECTRUM VIEW ══ -->
+    <div id="view-spectrum" class="view active" style="flex-direction:row;">
+      <div id="center">
+
+        <!-- FREQ BAR -->
+        <div id="fbar">
+          <button class="fnav" onclick="stepF(-1)">◄◄</button>
+          <div id="fdisp">433.920000</div>
+          <button class="fnav" onclick="stepF(1)">►►</button>
+          <select class="pxs" id="preset-sel" onchange="applyPreset(this.value)">
+            <option value="433920000">433.92 MHz</option>
+            <option value="315000000">315.00 MHz</option>
+            <option value="868000000">868.00 MHz</option>
+            <option value="915000000">915.00 MHz</option>
+            <option value="300000000">300.00 MHz</option>
+            <option value="928000000">928.00 MHz</option>
+          </select>
+          <div id="bwval">1000 kHz</div>
+          <input type="range" class="pxr" id="bw-sl" min="100" max="3000" value="1000"
+            oninput="setBW(this.value)" style="width:80px;">
+          <button class="pxbtn" id="scanbtn" onclick="startSweep()">▶ SWEEP</button>
+          <button class="pxbtn red" onclick="stopSweep()">■ STOP</button>
+          <button class="pxbtn" onclick="startRX()">RX HERE</button>
+        </div>
+
+        <!-- SPECTRUM MODE BAR -->
+        <div id="mode-bar">
+          <span id="mode-label">SPECTRUM MODE:</span>
+          <button class="mode-btn active" id="mb-real" onclick="setMode('real',this)">REAL</button>
+          <button class="mode-btn" id="mb-sim"  onclick="setMode('sim', this)">SIMULATION</button>
+          <button class="mode-btn" id="mb-pkg"  onclick="setMode('pkg', this)">PACKAGE</button>
+          <span id="mode-desc">Amplified real RSSI from Flipper · tiny signals visible</span>
+        </div>
+
+        <!-- SPECTRUM CANVAS AREA -->
+        <div id="speczone">
+          <div id="yaxis">
+            <span style="font-size:5px;color:var(--OD);">RSSI</span>
+            <span>-20</span><span>-40</span><span>-60</span><span>-80</span><span>-90</span>
+          </div>
+          <div id="canvases">
+            <div id="data-badge" class="idle">● WAITING</div>
+            <canvas id="spec-canvas"></canvas>
+            <canvas id="wf-canvas"></canvas>
+            <div id="xaxis">
+              <span id="xa-l">—</span><span id="xa-m1">—</span>
+              <span id="xa-c">433.920000 MHz</span>
+              <span id="xa-m2">—</span><span id="xa-r">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- LOWER STRIP -->
+        <div id="lower">
+
+          <!-- DEMODULATION -->
+          <div id="demod">
+            <div class="ptitle">Demodulation</div>
+            <div class="dr">
+              <span class="dl">Mode</span>
+              <select class="pxs" id="demod-mode">
+                <option>OOK</option><option>AM270</option><option>AM650</option>
+                <option>FM328</option><option>FM476</option><option>FSK</option>
+              </select>
+            </div>
+            <div class="dr">
+              <span class="dl">Profile</span>
+              <select class="pxs"><option>Flipper Default</option><option>Custom</option></select>
+            </div>
+            <div class="dr">
+              <span class="dl">Threshold</span>
+              <span class="dv" id="thresh-v">39%</span>
+            </div>
+            <div class="dr">
+              <input type="range" class="pxr" style="width:100%;" min="1" max="100" value="39"
+                oninput="document.getElementById('thresh-v').textContent=this.value+'%'">
+            </div>
+            <div class="dr">
+              <span class="dl">Sync Width</span>
+              <input type="range" class="pxr" style="flex:1;" min="1" max="100" value="50">
+            </div>
+            <div class="dr">
+              <span class="dl">Sync Length</span>
+              <input class="pxs" style="width:48px;" value="3.38"> <span class="dv">µs</span>
+            </div>
+            <div class="dr">
+              <span class="dl">Custom Pre</span>
+              <input class="pxs" style="width:40px;" value="0"> <span class="dv">bytes</span>
+            </div>
+            <div id="bigfreq-box">
+              <div style="display:flex;align-items:baseline;gap:4px;">
+                <span id="bigfreq">433.920000</span>
+                <span id="bfunit">MHz</span>
+              </div>
+              <div id="sigbar"><div id="sigfill"></div></div>
+            </div>
+          </div>
+
+          <!-- GAIN STAGES -->
+          <div id="gain">
+            <div class="ptitle">Gain Stages</div>
+            <div style="font-size:6px;color:var(--OB);margin-bottom:4px;">RX Amplifier</div>
+            <div class="gb-row">
+              <span class="gb-label">LNA Gain</span>
+              <div class="gb-track" id="lna-track">
+                <div class="gb-fill" id="lna-fill" style="width:80%"></div>
+                <div class="gb-head" id="lna-head" style="left:80%"></div>
+              </div>
+            </div>
+            <div class="gb-row">
+              <span class="gb-label">Mixer Gain</span>
+              <div class="gb-track" id="mix-track">
+                <div class="gb-fill" id="mix-fill" style="width:66%"></div>
+                <div class="gb-head" id="mix-head" style="left:66%"></div>
+              </div>
+            </div>
+            <div class="gb-row">
+              <span class="gb-label">IF Gain</span>
+              <div class="gb-track" id="if-track">
+                <div class="gb-fill" id="if-fill" style="width:70%"></div>
+                <div class="gb-head" id="if-head" style="left:70%"></div>
+              </div>
+            </div>
+            <div class="dr" style="margin-top:3px;">
+              <span class="dl">AFC</span>
+              <select class="pxs"><option>Hold</option><option>Off</option><option>Auto</option></select>
+              <span class="dl">Accuracy</span>
+              <select class="pxs"><option>Low</option><option>Med</option><option>High</option></select>
+            </div>
+            <div class="dr">
+              <span class="dl">LO:</span><span class="dv" id="lo-v">431.72 MHz</span>
+              <span class="dl" style="margin-left:8px;">Freq</span><span class="dv">-5 ppm</span>
+            </div>
+          </div>
+
+          <!-- MINI LOGS -->
+          <div id="mini-logs">
+            <div class="ptitle">Logs</div>
+            <div id="loglist"></div>
+          </div>
+
+        </div><!-- /lower -->
+      </div><!-- /center -->
+
+      <!-- RIGHT PANEL -->
+      <div id="right">
+        <div class="rp-sec">
+          <div class="rp-title">Tuner</div>
+          <div id="rxtx">
+            <button class="rxtx-btn on" id="rx-b" onclick="setRXTX('rx')">RX</button>
+            <button class="rxtx-btn"    id="tx-b" onclick="setRXTX('tx')">TX</button>
+          </div>
+          <div class="rp-row">
+            <span class="rp-lbl">Sampling</span>
+            <select class="pxs" style="font-size:5px;"><option>4.00 Msps</option><option>2.00 Msps</option></select>
+          </div>
+          <div class="rp-row">
+            <span class="rp-lbl">AGC</span>
+            <select class="pxs" style="font-size:5px;"><option>Moderate</option><option>Fast</option><option>Slow</option><option>Off</option></select>
+          </div>
+        </div>
+        <div class="rp-sec">
+          <div class="rp-title">Frequency</div>
+          <div class="rp-row" style="gap:3px;">
+            <button class="pxbtn active" onclick="recordFreq()" style="font-size:5px;padding:3px 5px;">Record</button>
+            <button class="pxbtn" onclick="clearFreq()" style="font-size:5px;padding:3px 5px;">Clear</button>
+            <button class="pxbtn" onclick="saveFreq()" style="font-size:5px;padding:3px 5px;">Save</button>
+          </div>
+          <div class="rp-row" style="margin-top:5px;"><span class="rp-lbl">Live RSSI</span><span class="rp-val" id="live-rssi">— dBm</span></div>
+          <div class="rp-row"><span class="rp-lbl">Pkts Rcvd</span><span class="rp-val" id="pkt-count">0</span></div>
+          <div class="rp-row"><span class="rp-lbl">Sweep Pts</span><span class="rp-val" id="sweep-pts">0</span></div>
+          <div class="rp-row"><span class="rp-lbl">Mode</span><span class="rp-val" id="mode-badge">REAL</span></div>
+        </div>
+        <div class="rp-sec">
+          <div class="rp-title">Gain Control</div>
+          <div class="rp-gain-row">
+            <span class="rp-gain-lbl">LNA Gain</span>
+            <div class="rp-gain-bar"><div class="rp-gain-fill" id="rp-lna" style="width:80%"></div></div>
+            <span class="rp-gain-val" id="rp-lna-v">32 dB</span>
+          </div>
+          <div class="rp-gain-row">
+            <span class="rp-gain-lbl">Mixer Gain</span>
+            <div class="rp-gain-bar"><div class="rp-gain-fill" id="rp-mix" style="width:66%"></div></div>
+            <span class="rp-gain-val" id="rp-mix-v">16 dB</span>
+          </div>
+          <div class="rp-gain-row">
+            <span class="rp-gain-lbl">IF Gain</span>
+            <div class="rp-gain-bar"><div class="rp-gain-fill" id="rp-if" style="width:70%"></div></div>
+            <span class="rp-gain-val" id="rp-if-v">28 dB</span>
+          </div>
+          <div class="rp-row"><span class="rp-lbl">Memory</span><span class="rp-val">0 Hits</span></div>
+        </div>
+        <div id="gpu-row">
+          <span class="rp-lbl">GPU</span>
+          <div id="gpu-bar"><div id="gpu-fill"></div></div>
+          <span class="rp-val" id="gpu-val">0/58</span>
+        </div>
+      </div><!-- /right -->
+    </div><!-- /view-spectrum -->
+
+    <!-- SUB-GHZ VIEW -->
+    <div id="view-subghz" class="view">
+      <div class="tab-inner">
+        <div class="tbox">
+          <div class="tbox-title">Sub-GHz — RX / TX</div>
+          <div class="tbox-row">
+            <div class="tfield"><label>Frequency (Hz)</label>
+              <input type="number" id="sg-freq" value="433920000" min="300000000" max="928000000" step="1000" style="width:130px;"></div>
+            <div class="tfield"><label>Device</label>
+              <select id="sg-dev"><option value="0">Internal CC1101</option><option value="1">External CC1101</option></select></div>
+            <div class="tfield"><label>Modulation</label>
+              <select id="sg-mod"><option>OOK</option><option>FSK</option><option>AM270</option><option>FM238</option><option>FM476</option></select></div>
+          </div>
+          <div class="tbox-row" style="gap:5px;margin-top:4px;">
+            <button class="bigbtn" onclick="sgRX()">► RX</button>
+            <button class="bigbtn" onclick="sgRXRaw()">► RX RAW</button>
+            <button class="bigbtn red" onclick="sgStop()">■ STOP</button>
+            <button class="bigbtn" onclick="sgFreqAna()">FREQ ANALYZER</button>
+            <button class="bigbtn" onclick="sgChat()">CHAT</button>
+          </div>
+        </div>
+        <div class="tbox">
+          <div class="tbox-title">TX — Transmit Key</div>
+          <div class="tbox-row">
+            <div class="tfield"><label>Key (3 bytes hex)</label>
+              <input type="text" id="tx-key" value="AABBCC" maxlength="6" style="width:85px;"></div>
+            <div class="tfield"><label>TE (µs)</label>
+              <input type="number" id="tx-te" value="300" style="width:65px;"></div>
+            <div class="tfield"><label>Repeat</label>
+              <input type="number" id="tx-rep" value="3" min="1" max="10" style="width:50px;"></div>
+          </div>
+          <button class="bigbtn" onclick="sgTX()" style="margin-top:4px;">TRANSMIT</button>
+        </div>
+        <div class="tbox" style="flex:1;display:flex;flex-direction:column;">
+          <div class="tbox-title">Serial Output</div>
+          <div id="rxout">[Connect Flipper Zero to begin]</div>
+          <div style="display:flex;gap:5px;margin-top:5px;">
+            <button class="bigbtn" onclick="clearRX()" style="font-size:6px;padding:4px 9px;">CLEAR</button>
+            <button class="bigbtn" onclick="saveRX()" style="font-size:6px;padding:4px 9px;">SAVE .TXT</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIGNALS VIEW -->
+    <div id="view-signals" class="view">
+      <div class="tab-inner">
+        <div style="font-size:8px;color:var(--OB);margin-bottom:6px;">Detected Signals</div>
+        <div style="display:flex;gap:5px;margin-bottom:7px;">
+          <button class="bigbtn" onclick="clearSigs()" style="font-size:6px;padding:4px 9px;">CLEAR</button>
+          <button class="bigbtn" onclick="exportSigs()" style="font-size:6px;padding:4px 9px;">EXPORT</button>
+        </div>
+        <div id="siglist"><div style="font-size:6px;color:var(--DIM);">No signals detected yet.</div></div>
+      </div>
+    </div>
+
+    <!-- LOGS VIEW -->
+    <div id="view-logs" class="view">
+      <div class="tab-inner" style="gap:5px;">
+        <div style="display:flex;gap:5px;">
+          <button class="bigbtn" onclick="clearLogs()" style="font-size:6px;padding:4px 9px;">CLEAR</button>
+          <button class="bigbtn" onclick="exportLogs()" style="font-size:6px;padding:4px 9px;">EXPORT</button>
+        </div>
+        <div id="fulllog"></div>
+      </div>
+    </div>
+
+  </div><!-- /body -->
+
+  <!-- STATUS BAR -->
+  <div id="sbar">
+    <span class="dot" id="dot">■</span>
+    <span id="sb-conn">Disconnected</span>
+    <span>|</span><span>Bandwth</span><span id="sb-bw">1000 kHz</span>
+    <span>|</span><span>RSSI</span><span id="sb-rssi">-- dBm</span>
+    <span>|</span><span>Mode</span><span id="sb-mode-txt">REAL</span>
+    <span id="sbar-time" style="margin-left:auto;"></span>
+  </div>
+
+</div><!-- /frame -->
+
+<script src="js/flipsay.js"></script>
+</body>
+</html>
