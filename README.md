@@ -24,3 +24,4 @@ Requirements:
 • USB cable
 
 Created by github.com/itsc0c0
+FlipSay One will be released in a couple months.
